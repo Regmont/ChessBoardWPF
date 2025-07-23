@@ -3,6 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Шахматная доска" Height="540" Width="520">
     <Grid Name="ChessGrid" Margin="10">
-        <Canvas Name="FieldCanvas"/>
+        <Canvas Name="FieldCanvas" MouseDown="FieldCanvas_MouseDown"/>
     </Grid>
 </Window>

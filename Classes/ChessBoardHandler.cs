@@ -4,6 +4,8 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using ChessBoardWPF.Classes.Pieces;
+using System.Linq;
 
 namespace ChessBoardWPF.Classes
 {
@@ -26,7 +28,7 @@ namespace ChessBoardWPF.Classes
         private const string BlackRook = "https://upload.wikimedia.org/wikipedia/commons/a/a0/Chess_rdt60.png";
         #endregion
 
-        private Canvas FieldCanvas;
+        public Canvas FieldCanvas;
         List<ChessPiece> pieces;
 
         public ChessBoardHandler(Canvas fieldCanvas, List<ChessPiece> pieces)
@@ -37,47 +39,63 @@ namespace ChessBoardWPF.Classes
 
         public void SetChessBoard()
         {
-            pieces.Add(new ChessPiece(new Coord(0, 0), "Rook", "Black"));
-            pieces.Add(new ChessPiece(new Coord(7, 0), "Rook", "Black"));
-            pieces.Add(new ChessPiece(new Coord(1, 0), "Knight", "Black"));
-            pieces.Add(new ChessPiece(new Coord(6, 0), "Knight", "Black"));
-            pieces.Add(new ChessPiece(new Coord(2, 0), "Bishop", "Black"));
-            pieces.Add(new ChessPiece(new Coord(5, 0), "Bishop", "Black"));
-            pieces.Add(new ChessPiece(new Coord(3, 0), "Queen", "Black"));
-            pieces.Add(new ChessPiece(new Coord(4, 0), "King", "Black"));
+            pieces.Add(new Rook(new Coord(0, 0), "Black"));
+            pieces.Add(new Rook(new Coord(7, 0), "Black"));
+            pieces.Add(new Knight(new Coord(1, 0), "Black"));
+            pieces.Add(new Knight(new Coord(6, 0), "Black"));
+            pieces.Add(new Bishop(new Coord(2, 0), "Black"));
+            pieces.Add(new Bishop(new Coord(5, 0), "Black"));
+            pieces.Add(new Queen(new Coord(3, 0), "Black"));
+            pieces.Add(new King(new Coord(4, 0), "Black"));
 
-            pieces.Add(new ChessPiece(new Coord(0, 7), "Rook", "White"));
-            pieces.Add(new ChessPiece(new Coord(7, 7), "Rook", "White"));
-            pieces.Add(new ChessPiece(new Coord(1, 7), "Knight", "White"));
-            pieces.Add(new ChessPiece(new Coord(6, 7), "Knight", "White"));
-            pieces.Add(new ChessPiece(new Coord(2, 7), "Bishop", "White"));
-            pieces.Add(new ChessPiece(new Coord(5, 7), "Bishop", "White"));
-            pieces.Add(new ChessPiece(new Coord(3, 7), "Queen", "White"));
-            pieces.Add(new ChessPiece(new Coord(4, 7), "King", "White"));
+            pieces.Add(new Rook(new Coord(0, 7), "White"));
+            pieces.Add(new Rook(new Coord(7, 7), "White"));
+            pieces.Add(new Knight(new Coord(1, 7), "White"));
+            pieces.Add(new Knight(new Coord(6, 7), "White"));
+            pieces.Add(new Bishop(new Coord(2, 7), "White"));
+            pieces.Add(new Bishop(new Coord(5, 7), "White"));
+            pieces.Add(new Queen(new Coord(3, 7), "White"));
+            pieces.Add(new King(new Coord(4, 7), "White"));
 
             for (int i = 0; i < 8; i++)
             {
-                pieces.Add(new ChessPiece(new Coord(i, 1), "Pawn", "Black"));
-                pieces.Add(new ChessPiece(new Coord(i, 6), "Pawn", "White"));
+                pieces.Add(new Pawn(new Coord(i, 1), "Black"));
+                pieces.Add(new Pawn(new Coord(i, 6), "White"));
             }
 
-            PrintChessBoard(pieces);
+            PrintChessBoard(pieces, null, null);
         }
 
-        public void PrintChessBoard(List<ChessPiece> pieces)
+        public void PrintChessBoard(List<ChessPiece> pieces, ChessPiece selectedPiece, Coord enPassantCoord)
         {
-            for (int i = 0; i < Size; i++)
-            {
-                for (int j = 0; j < Size; j++)
-                {
-                    Rectangle rect = new Rectangle();
-                    rect.Width = 60;
-                    rect.Height = 60;
-                    rect.Stroke = Brushes.Black;
-                    rect.Fill = (i + j) % 2 == 0 ? Brushes.White : Brushes.Gray;
+            FieldCanvas.Children.Clear();
 
-                    Canvas.SetLeft(rect, j * 60);
-                    Canvas.SetTop(rect, i * 60);
+            for (int y = 0; y < Size; y++)
+            {
+                for (int x = 0; x < Size; x++)
+                {
+                    Rectangle rect = new Rectangle
+                    {
+                        Width = 60,
+                        Height = 60,
+                        Stroke = Brushes.Black
+                    };
+
+                    if (selectedPiece != null && selectedPiece.Coord.X == x && selectedPiece.Coord.Y == y)
+                    {
+                        rect.Fill = Brushes.LightBlue;
+                    }
+                    else if (selectedPiece != null && selectedPiece.GetPossibleMoves(pieces, enPassantCoord).Any(m => m.X == x && m.Y == y))
+                    {
+                        rect.Fill = Brushes.LightGreen;
+                    }
+                    else
+                    {
+                        rect.Fill = (x + y) % 2 == 0 ? Brushes.White : Brushes.Gray;
+                    }
+
+                    Canvas.SetLeft(rect, x * 60);
+                    Canvas.SetTop(rect, y * 60);
 
                     FieldCanvas.Children.Add(rect);
                 }
@@ -85,32 +103,38 @@ namespace ChessBoardWPF.Classes
 
             foreach (ChessPiece piece in pieces)
             {
-                string url = string.Empty;
+                string imageUrl = GetPieceImageUrl(piece);
+                AddPieceToCell(piece.Coord.Y, piece.Coord.X, imageUrl);
+            }
+        }
 
+        private string GetPieceImageUrl(ChessPiece piece)
+        {
+            if (piece.Color == "Black")
+            {
                 switch (piece.Type)
                 {
-                    case "Rook":
-                        url = piece.Color == "Black" ? BlackRook : WhiteRook;
-                        break;
-                    case "Knight":
-                        url = piece.Color == "Black" ? BlackKnight : WhiteKnight;
-                        break;
-                    case "Bishop":
-                        url = piece.Color == "Black" ? BlackBishop : WhiteBishop;
-                        break;
-                    case "Queen":
-                        url = piece.Color == "Black" ? BlackQueen : WhiteQueen;
-                        break;
-                    case "King":
-                        url = piece.Color == "Black" ? BlackKing : WhiteKing;
-                        break;
-                    case "Pawn":
-                        url = piece.Color == "Black" ? BlackPawn : WhitePawn;
-                        break;
-
+                    case "Rook": return BlackRook;
+                    case "Knight": return BlackKnight;
+                    case "Bishop": return BlackBishop;
+                    case "Queen": return BlackQueen;
+                    case "King": return BlackKing;
+                    case "Pawn": return BlackPawn;
+                    default: throw new ArgumentException("Unknown black piece type");
                 }
-
-                AddPieceToCell(piece.Coord.Y, piece.Coord.X, url);
+            }
+            else
+            {
+                switch (piece.Type)
+                {
+                    case "Rook": return WhiteRook;
+                    case "Knight": return WhiteKnight;
+                    case "Bishop": return WhiteBishop;
+                    case "Queen": return WhiteQueen;
+                    case "King": return WhiteKing;
+                    case "Pawn": return WhitePawn;
+                    default: throw new ArgumentException("Unknown white piece type");
+                }
             }
         }
 

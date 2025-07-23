@@ -1,0 +1,19 @@
+﻿<Window x:Class="ChessBoardWPF.PromotionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Выберите фигуру" SizeToContent="WidthAndHeight" WindowStartupLocation="CenterScreen">
+    <StackPanel Orientation="Horizontal" Margin="10">
+        <Button Tag="Queen" Click="PieceButton_Click" Margin="5">
+            <Image Source="{Binding QueenImageUrl}" Width="50" Height="50"/>
+        </Button>
+        <Button Tag="Rook" Click="PieceButton_Click" Margin="5">
+            <Image Source="{Binding RookImageUrl}" Width="50" Height="50"/>
+        </Button>
+        <Button Tag="Bishop" Click="PieceButton_Click" Margin="5">
+            <Image Source="{Binding BishopImageUrl}" Width="50" Height="50"/>
+        </Button>
+        <Button Tag="Knight" Click="PieceButton_Click" Margin="5">
+            <Image Source="{Binding KnightImageUrl}" Width="50" Height="50"/>
+        </Button>
+    </StackPanel>
+</Window>

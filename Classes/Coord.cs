@@ -1,4 +1,6 @@
-﻿namespace ChessBoardWPF
+﻿using System.Windows;
+
+namespace ChessBoardWPF
 {
     public class Coord
     {
@@ -9,6 +11,37 @@
         {
             X = x;
             Y = y;
+        }
+
+        public Coord(Coord other)
+        {
+            X = other.X;
+            Y = other.Y;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || !(obj is Coord))
+                return false;
+
+            Coord coord = (Coord)obj;
+            return X == coord.X && Y == coord.Y;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 23 + X.GetHashCode();
+                hash = hash * 23 + Y.GetHashCode();
+                return hash;
+            }
+        }
+
+        public static Coord PointToCoord(Point p, int canvasSize)
+        {
+            return new Coord((int)(p.X / canvasSize), (int)(p.Y / canvasSize));
         }
     }
 }
