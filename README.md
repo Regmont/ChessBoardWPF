@@ -3,3 +3,6 @@ I managed to create one mostly by myself with a few code optimizations by DeepSe
 Everything works with the help of lists 'cause I'm still not good at using dictionaries, trees and other advanced data structures in my algorithms.
 This chess engine doesn't allow you to do checks and checkmates.
 I'll ask DeepSeek to rewrite the logic for easier implementation of checks and checkmates.
+
+Update:
+DeepSeek sucks. I had to rewrite logic myself... I'll try to use chat bot again to use dictionaries in the code instead of lists.
