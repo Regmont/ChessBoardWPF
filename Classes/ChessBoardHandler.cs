@@ -1,32 +1,17 @@
-﻿using System;
+﻿using ChessBoardWPF.Classes.Pieces;
+using System;
 using System.Collections.Generic;
-using System.Windows.Controls;
-using System.Windows.Media.Imaging;
-using System.Windows.Media;
-using System.Windows.Shapes;
-using ChessBoardWPF.Classes.Pieces;
 using System.Linq;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 
 namespace ChessBoardWPF.Classes
 {
     class ChessBoardHandler
     {
-        #region constants
         private const int Size = 8;
-
-        private const string BlackBishop = "https://upload.wikimedia.org/wikipedia/commons/8/81/Chess_bdt60.png";
-        private const string WhiteBishop = "https://upload.wikimedia.org/wikipedia/commons/9/9b/Chess_blt60.png";
-        private const string WhiteKing = "https://upload.wikimedia.org/wikipedia/commons/3/3b/Chess_klt60.png";
-        private const string BlackKing = "https://upload.wikimedia.org/wikipedia/commons/e/e3/Chess_kdt60.png";
-        private const string WhiteKnight = "https://upload.wikimedia.org/wikipedia/commons/2/28/Chess_nlt60.png";
-        private const string BlackKnight = "https://upload.wikimedia.org/wikipedia/commons/f/f1/Chess_ndt60.png";
-        private const string WhitePawn = "https://upload.wikimedia.org/wikipedia/commons/0/04/Chess_plt60.png";
-        private const string BlackPawn = "https://upload.wikimedia.org/wikipedia/commons/c/cd/Chess_pdt60.png";
-        private const string WhiteQueen = "https://upload.wikimedia.org/wikipedia/commons/4/49/Chess_qlt60.png";
-        private const string BlackQueen = "https://upload.wikimedia.org/wikipedia/commons/a/af/Chess_qdt60.png";
-        private const string WhiteRook = "https://upload.wikimedia.org/wikipedia/commons/5/5c/Chess_rlt60.png";
-        private const string BlackRook = "https://upload.wikimedia.org/wikipedia/commons/a/a0/Chess_rdt60.png";
-        #endregion
 
         public Canvas FieldCanvas;
         List<ChessPiece> pieces;
@@ -82,17 +67,11 @@ namespace ChessBoardWPF.Classes
                     };
 
                     if (selectedPiece != null && selectedPiece.Coord.X == x && selectedPiece.Coord.Y == y)
-                    {
                         rect.Fill = Brushes.LightBlue;
-                    }
                     else if (selectedPiece != null && selectedPiece.GetPossibleMoves(pieces, enPassantCoord).Any(m => m.X == x && m.Y == y))
-                    {
                         rect.Fill = Brushes.LightGreen;
-                    }
                     else
-                    {
                         rect.Fill = (x + y) % 2 == 0 ? Brushes.White : Brushes.Gray;
-                    }
 
                     Canvas.SetLeft(rect, x * 60);
                     Canvas.SetTop(rect, y * 60);
@@ -103,52 +82,51 @@ namespace ChessBoardWPF.Classes
 
             foreach (ChessPiece piece in pieces)
             {
-                string imageUrl = GetPieceImageUrl(piece);
-                AddPieceToCell(piece.Coord.Y, piece.Coord.X, imageUrl);
+                string imageUrl = PieceImages.GetPieceImageUrl(piece.Type, piece.Color);
+                AddPieceToCell(piece.Coord, imageUrl);
             }
         }
 
-        private string GetPieceImageUrl(ChessPiece piece)
-        {
-            if (piece.Color == "Black")
-            {
-                switch (piece.Type)
-                {
-                    case "Rook": return BlackRook;
-                    case "Knight": return BlackKnight;
-                    case "Bishop": return BlackBishop;
-                    case "Queen": return BlackQueen;
-                    case "King": return BlackKing;
-                    case "Pawn": return BlackPawn;
-                    default: throw new ArgumentException("Unknown black piece type");
-                }
-            }
-            else
-            {
-                switch (piece.Type)
-                {
-                    case "Rook": return WhiteRook;
-                    case "Knight": return WhiteKnight;
-                    case "Bishop": return WhiteBishop;
-                    case "Queen": return WhiteQueen;
-                    case "King": return WhiteKing;
-                    case "Pawn": return WhitePawn;
-                    default: throw new ArgumentException("Unknown white piece type");
-                }
-            }
-        }
-
-        private void AddPieceToCell(int row, int col, string imageUrl)
+        private void AddPieceToCell(Coord coord, string imageUrl)
         {
             Image pieceImage = new Image();
             pieceImage.Source = new BitmapImage(new Uri(imageUrl));
             pieceImage.Width = 40;
             pieceImage.Height = 40;
 
-            Canvas.SetLeft(pieceImage, col * 60 + 10);
-            Canvas.SetTop(pieceImage, row * 60 + 10);
+            Canvas.SetLeft(pieceImage, coord.X * 60 + 10);
+            Canvas.SetTop(pieceImage, coord.Y * 60 + 10);
 
             FieldCanvas.Children.Add(pieceImage);
+        }
+
+        public void PromotePawn(Pawn pawn)
+        {
+            var dialog = new PromotionDialog(pawn.Color);
+            if ((bool)dialog.ShowDialog())
+            {
+                ChessPiece newPiece;
+                switch (dialog.SelectedPieceType)
+                {
+                    case "Queen":
+                        newPiece = new Queen(pawn.Coord, pawn.Color);
+                        break;
+                    case "Rook":
+                        newPiece = new Rook(pawn.Coord, pawn.Color);
+                        break;
+                    case "Bishop":
+                        newPiece = new Bishop(pawn.Coord, pawn.Color);
+                        break;
+                    case "Knight":
+                        newPiece = new Knight(pawn.Coord, pawn.Color);
+                        break;
+                    default:
+                        throw new InvalidOperationException("Неизвестный тип фигуры");
+                }
+
+                pieces.Remove(pawn);
+                pieces.Add(newPiece);
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 ﻿using ChessBoardWPF.Classes;
 using ChessBoardWPF.Classes.Pieces;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -20,7 +19,11 @@ namespace ChessBoardWPF
         public MainWindow()
         {
             InitializeComponent();
+            PrepareGame();
+        }
 
+        private void PrepareGame()
+        {
             pieces = new List<ChessPiece>();
 
             handler = new ChessBoardHandler(FieldCanvas, pieces);
@@ -31,6 +34,30 @@ namespace ChessBoardWPF
             EnPassantCoord = null;
         }
 
+        private void FieldCanvas_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Right)
+                HandleMouseRightClick();
+            else
+            {
+                //Click coordinate
+                Point position = e.GetPosition(handler.FieldCanvas);
+                Coord selectedCoord = Coord.PointToCoord(position, (int)(FieldCanvas.ActualWidth / 8));
+
+                if (pieceSelected)
+                    HandlePieceMovement(selectedCoord);
+                else
+                    selectedPiece = SelectPiece(selectedCoord);
+            }
+        }
+
+        private void HandleMouseRightClick()
+        {
+            pieceSelected = false;
+            selectedPiece = null;
+            handler.PrintChessBoard(pieces, null, null);
+        }
+
         private ChessPiece SelectPiece(Coord selectedCoord)
         {
             ChessPiece selectedPiece = pieces.FirstOrDefault(x => x.Coord.Equals(selectedCoord));
@@ -38,10 +65,27 @@ namespace ChessBoardWPF
             if (selectedPiece != null && selectedPiece.Color.Equals(currentPlayerColor) && selectedPiece.GetPossibleMoves(pieces, EnPassantCoord).Count() > 0)
             {
                 pieceSelected = true;
-                return selectedPiece;
+                handler.PrintChessBoard(pieces, selectedPiece, EnPassantCoord);
             }
 
-            return null;
+            return selectedPiece;
+        }
+
+        private void HandlePieceMovement(Coord selectedCoord)
+        {
+            Coord previousCoord = new Coord(selectedPiece.Coord);
+
+            if (MovePiece(selectedPiece, selectedCoord))
+            {
+                if (selectedPiece.AvailableForEnPassant(previousCoord))
+                    EnPassantCoord = new Coord(previousCoord.X, (previousCoord.Y + selectedPiece.Coord.Y) / 2);
+
+                if (selectedPiece is Pawn && (selectedPiece.Coord.Y == 0 || selectedPiece.Coord.Y == 7))
+                    handler.PromotePawn((Pawn)selectedPiece);
+
+                handler.PrintChessBoard(pieces, null, EnPassantCoord);
+                currentPlayerColor = currentPlayerColor.Equals("White") ? "Black" : "White";
+            }
         }
 
         private bool MovePiece(ChessPiece piece, Coord newPos)
@@ -51,9 +95,7 @@ namespace ChessBoardWPF
                 ChessPiece pieceToRemove = pieces.FirstOrDefault(x => x.Coord.Equals(newPos));
 
                 if (pieceToRemove != null)
-                {
                     pieces.Remove(pieceToRemove);
-                }
                 else if (piece is Pawn && !piece.Coord.X.Equals(newPos.X))
                 {
                     if (piece.Color.Equals("White"))
@@ -72,76 +114,6 @@ namespace ChessBoardWPF
             }
 
             return false;
-        }
-
-        private void FieldCanvas_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ChangedButton == MouseButton.Right)
-            {
-                pieceSelected = false;
-                selectedPiece = null;
-                handler.PrintChessBoard(pieces, null, null);
-
-                return;
-            }
-
-            Point position = e.GetPosition(handler.FieldCanvas);
-            Coord selectedCoord = Coord.PointToCoord(position, (int)(FieldCanvas.ActualWidth / 8));
-
-            if (pieceSelected)
-            {
-                Coord previousCoord = new Coord(selectedPiece.Coord);
-
-                if (MovePiece(selectedPiece, selectedCoord))
-                {
-                    if (selectedPiece.AvailableForEnPassant(previousCoord))
-                    {
-                        EnPassantCoord = new Coord(previousCoord.X, (previousCoord.Y + selectedPiece.Coord.Y) / 2);
-                    }
-
-                    if (selectedPiece is Pawn && (selectedPiece.Coord.Y == 0 || selectedPiece.Coord.Y == 7))
-                        PromotePawn((Pawn)selectedPiece);
-
-                    handler.PrintChessBoard(pieces, null, EnPassantCoord);
-                    currentPlayerColor = currentPlayerColor.Equals("White") ? "Black" : "White";
-                }
-            }
-            else
-            {
-                selectedPiece = SelectPiece(selectedCoord);
-
-                if (selectedPiece != null)
-                    handler.PrintChessBoard(pieces, selectedPiece, EnPassantCoord);
-            }
-        }
-
-        private void PromotePawn(Pawn pawn)
-        {
-            var dialog = new PromotionDialog(pawn.Color);
-            if (dialog.ShowDialog() == true)
-            {
-                ChessPiece newPiece;
-                switch (dialog.SelectedPieceType)
-                {
-                    case "Queen":
-                        newPiece = new Queen(pawn.Coord, pawn.Color);
-                        break;
-                    case "Rook":
-                        newPiece = new Rook(pawn.Coord, pawn.Color);
-                        break;
-                    case "Bishop":
-                        newPiece = new Bishop(pawn.Coord, pawn.Color);
-                        break;
-                    case "Knight":
-                        newPiece = new Knight(pawn.Coord, pawn.Color);
-                        break;
-                    default:
-                        throw new InvalidOperationException("Неизвестный тип фигуры");
-                }
-
-                pieces.Remove(pawn);
-                pieces.Add(newPiece);
-            }
         }
     }
 }
